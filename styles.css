@@ -51,6 +51,7 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     pointer-events: none;
+    z-index: 10;
 }
 
 .score-container {
@@ -63,12 +64,16 @@ body {
 }
 
 #minimap {
-    width: 200px;
-    height: 200px;
-    background-color: rgba(0, 0, 0, 0.5);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 150px;
+    height: 150px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     backdrop-filter: blur(5px);
+    z-index: 20;
 }
 
 .game-menu, .game-over {
@@ -190,9 +195,11 @@ h2 {
     }
 
     #minimap {
-        width: 100px;
-        height: 100px;
-        opacity: 0.8;
+        width: 80px;
+        height: 80px;
+        top: 15px;
+        right: 15px;
+        opacity: 0.7;
     }
 
     .score-container {
@@ -233,8 +240,30 @@ h2 {
         }
 
         #minimap {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
+            top: 10px;
+            right: 10px;
         }
+    }
+}
+
+/* Further adjust for smaller screens */
+@media (max-width: 480px) {
+    #minimap {
+        width: 70px;
+        height: 70px;
+        top: 10px;
+        right: 10px;
+    }
+}
+
+/* Adjust for landscape orientation on mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    #minimap {
+        width: 60px;
+        height: 60px;
+        top: 10px;
+        right: 10px;
     }
 } 

@@ -41,8 +41,14 @@ class SnakeGame3D {
         // Initialize minimap
         this.minimapCanvas = document.getElementById('minimap');
         this.minimapCtx = this.minimapCanvas.getContext('2d');
-        this.minimapCanvas.width = 200;
-        this.minimapCanvas.height = 200;
+        this.minimapCanvas.width = 150;  // Match CSS size
+        this.minimapCanvas.height = 150;
+
+        // Adjust for device pixel ratio
+        const dpr = Math.min(window.devicePixelRatio, 2);
+        this.minimapCanvas.width *= dpr;
+        this.minimapCanvas.height *= dpr;
+        this.minimapCtx.scale(dpr, dpr);
 
         // Game settings
         this.gridSize = 40;
@@ -406,29 +412,58 @@ class SnakeGame3D {
     updateMinimap() {
         const ctx = this.minimapCtx;
         const scale = this.minimapCanvas.width / (this.tileCount * this.gridSize);
+        const tileSize = Math.max(2, this.gridSize * scale); // Ensure minimum size of 2px
 
-        // Clear minimap
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        // Clear minimap with semi-transparent background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.fillRect(0, 0, this.minimapCanvas.width, this.minimapCanvas.height);
 
-        // Draw food
-        ctx.fillStyle = '#ff4444';
-        ctx.fillRect(
-            (this.food.x + this.tileCount/2) * this.gridSize * scale,
-            (this.food.z + this.tileCount/2) * this.gridSize * scale,
-            this.gridSize * scale,
-            this.gridSize * scale
-        );
+        // Draw grid lines (subtle)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= this.tileCount; i++) {
+            const pos = i * this.gridSize * scale;
+            ctx.beginPath();
+            ctx.moveTo(pos, 0);
+            ctx.lineTo(pos, this.minimapCanvas.height);
+            ctx.moveTo(0, pos);
+            ctx.lineTo(this.minimapCanvas.width, pos);
+            ctx.stroke();
+        }
 
-        // Draw snake
-        ctx.fillStyle = '#ffff00';
-        this.snake.forEach(segment => {
-            ctx.fillRect(
-                (segment.x + this.tileCount/2) * this.gridSize * scale,
-                (segment.z + this.tileCount/2) * this.gridSize * scale,
-                this.gridSize * scale,
-                this.gridSize * scale
+        // Draw food with glow effect
+        ctx.fillStyle = '#ff4444';
+        ctx.shadowColor = '#ff0000';
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.arc(
+            (this.food.x + this.tileCount/2) * this.gridSize * scale + tileSize/2,
+            (this.food.z + this.tileCount/2) * this.gridSize * scale + tileSize/2,
+            tileSize/2,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+
+        // Reset shadow for snake
+        ctx.shadowBlur = 0;
+
+        // Draw snake with gradient
+        const headIndex = 0;
+        this.snake.forEach((segment, index) => {
+            // Create gradient from head to tail
+            const alpha = 1 - (index / this.snake.length) * 0.5;
+            ctx.fillStyle = index === headIndex ? '#ffff00' : `rgba(255, 255, 0, ${alpha})`;
+            
+            ctx.beginPath();
+            ctx.arc(
+                (segment.x + this.tileCount/2) * this.gridSize * scale + tileSize/2,
+                (segment.z + this.tileCount/2) * this.gridSize * scale + tileSize/2,
+                tileSize/2,
+                0,
+                Math.PI * 2
             );
+            ctx.fill();
         });
     }
 
