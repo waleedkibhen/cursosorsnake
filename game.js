@@ -187,76 +187,68 @@ class SnakeGame3D {
             this.handleKeyPress(e.key);
         });
 
-        // Touch button controls
-        document.getElementById('upBtn').addEventListener('click', () => this.handleKeyPress('ArrowUp'));
-        document.getElementById('downBtn').addEventListener('click', () => this.handleKeyPress('ArrowDown'));
-        document.getElementById('leftBtn').addEventListener('click', () => this.handleKeyPress('ArrowLeft'));
-        document.getElementById('rightBtn').addEventListener('click', () => this.handleKeyPress('ArrowRight'));
+        // Touch button controls - Using touchstart for faster response
+        const touchButtons = {
+            'upBtn': 'ArrowUp',
+            'downBtn': 'ArrowDown',
+            'leftBtn': 'ArrowLeft',
+            'rightBtn': 'ArrowRight'
+        };
 
-        // Touch swipe controls
-        document.getElementById('gameCanvas').addEventListener('touchstart', (e) => {
+        Object.entries(touchButtons).forEach(([btnId, key]) => {
+            const btn = document.getElementById(btnId);
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.handleKeyPress(key);
+            }, { passive: false });
+        });
+
+        // Touch swipe controls with optimized thresholds
+        const canvas = document.getElementById('gameCanvas');
+        this.swipeThreshold = 30; // Reduced threshold for faster response
+        this.swipeTimeThreshold = 200; // Reduced time threshold
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             const touch = e.touches[0];
             this.touchStart = { x: touch.clientX, y: touch.clientY };
             this.touchStartTime = Date.now();
-        }, false);
-
-        document.getElementById('gameCanvas').addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Prevent scrolling while playing
         }, { passive: false });
 
-        document.getElementById('gameCanvas').addEventListener('touchend', (e) => {
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
             if (!this.touchStart) return;
 
             const touch = e.changedTouches[0];
             const touchEnd = { x: touch.clientX, y: touch.clientY };
             const touchEndTime = Date.now();
 
-            // Calculate swipe
             const dx = touchEnd.x - this.touchStart.x;
             const dy = touchEnd.y - this.touchStart.y;
             const touchDuration = touchEndTime - this.touchStartTime;
 
-            // Only handle quick swipes
             if (touchDuration <= this.swipeTimeThreshold) {
-                // Check if horizontal or vertical swipe based on which has greater magnitude
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    // Horizontal swipe
-                    if (Math.abs(dx) >= this.swipeThreshold) {
-                        if (dx > 0) {
-                            this.handleKeyPress('ArrowRight');
-                        } else {
-                            this.handleKeyPress('ArrowLeft');
-                        }
-                    }
-                } else {
-                    // Vertical swipe
-                    if (Math.abs(dy) >= this.swipeThreshold) {
-                        if (dy > 0) {
-                            this.handleKeyPress('ArrowDown');
-                        } else {
-                            this.handleKeyPress('ArrowUp');
-                        }
-                    }
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) >= this.swipeThreshold) {
+                    this.handleKeyPress(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
+                } else if (Math.abs(dy) >= this.swipeThreshold) {
+                    this.handleKeyPress(dy > 0 ? 'ArrowDown' : 'ArrowUp');
                 }
             }
 
             this.touchStart = null;
-        }, false);
+        }, { passive: false });
 
-        // Add touch control for game start
-        document.getElementById('startBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.startGame();
-        });
-
-        document.getElementById('restartBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.startGame();
-        });
-
-        // Mouse click for game start
-        document.getElementById('startBtn').addEventListener('click', () => {
-            this.startGame();
+        // Game start/restart touch controls
+        ['startBtn', 'restartBtn'].forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.startGame();
+            }, { passive: false });
+            btn.addEventListener('click', () => this.startGame());
         });
     }
 
@@ -365,10 +357,12 @@ class SnakeGame3D {
                     z: segment.z * this.gridSize
                 };
 
-                // Smooth movement animation
+                // Faster animation for mobile
+                const duration = this.gameSpeed * 0.5; // Reduced from 0.8 to 0.5
+                
                 new TWEEN.Tween(this.snakeSegments[index].position)
-                    .to(targetPosition, this.gameSpeed * 0.8)
-                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .to(targetPosition, duration)
+                    .easing(TWEEN.Easing.Linear.None) // Changed to Linear for smoother movement
                     .start();
             }
         });
