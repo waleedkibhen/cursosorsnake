@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Snake Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/TextureLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui-overlay">
+            <div class="game-header">
+                <div class="score-container">
+                    Score: <span id="score">0</span>
+                </div>
+                <canvas id="minimap"></canvas>
+            </div>
+            <div id="game-menu" class="game-menu">
+                <h1>3D Snake Game</h1>
+                <button id="startBtn" class="menu-button">Start Game</button>
+            </div>
+            <div id="game-over" class="game-over hidden">
+                <h2>Game Over!</h2>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <button id="restartBtn" class="menu-button">Play Again</button>
+            </div>
+            <div class="mobile-controls">
+                <button id="upBtn">↑</button>
+                <div class="horizontal-controls">
+                    <button id="leftBtn">←</button>
+                    <button id="rightBtn">→</button>
+                </div>
+                <button id="downBtn">↓</button>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html> 
