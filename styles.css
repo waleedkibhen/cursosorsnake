@@ -5,6 +5,10 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -25,6 +29,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    touch-action: none;
 }
 
 .ui-overlay {
@@ -116,32 +121,33 @@ h2 {
 
 .mobile-controls {
     position: absolute;
-    bottom: 40px;
-    left: 30px;
+    bottom: 35%;
+    left: 20px;
     transform: none;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
     pointer-events: auto;
     touch-action: none;
+    z-index: 100;
 }
 
 .horizontal-controls {
     display: flex;
-    gap: 15px;
+    gap: 12px;
 }
 
 .mobile-controls button {
-    width: 70px;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
     border-radius: 50%;
     color: white;
-    font-size: 2rem;
+    font-size: 1.8rem;
     cursor: pointer;
-    transition: transform 0.1s ease;
+    transition: transform 0.05s ease, background-color 0.05s ease;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -150,12 +156,13 @@ h2 {
     user-select: none;
     padding: 0;
     backdrop-filter: blur(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .mobile-controls button:active {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(0.9);
-    transition: transform 0.05s ease;
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0.95);
+    transition: transform 0.03s ease, background-color 0.03s ease;
 }
 
 /* Show mobile controls on touch devices */
@@ -175,41 +182,59 @@ h2 {
 /* Adjust game container for smaller screens */
 @media (max-width: 768px) {
     .game-header {
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 10px;
+        gap: 10px;
     }
 
     #minimap {
-        width: 150px;
-        height: 150px;
+        width: 100px;
+        height: 100px;
+        opacity: 0.8;
     }
 
     .score-container {
         font-size: 1.2rem;
+        padding: 8px 15px;
     }
 
     .game-menu, .game-over {
-        width: 90%;
-        max-width: 400px;
-        padding: 1.5rem;
+        width: 85%;
+        max-width: 350px;
+        padding: 1.2rem;
+        background: rgba(0, 0, 0, 0.85);
     }
 
     h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
 
     h2 {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
     }
 
     .menu-button {
-        padding: 12px 24px;
+        padding: 10px 20px;
         font-size: 1rem;
     }
 
-    .mobile-controls {
-        left: 20px;
-        bottom: 30px;
+    /* Optimize for smaller screens */
+    @media (max-height: 600px) {
+        .mobile-controls {
+            bottom: 30%;
+        }
+
+        .mobile-controls button {
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+        }
+
+        #minimap {
+            width: 80px;
+            height: 80px;
+        }
     }
 } 

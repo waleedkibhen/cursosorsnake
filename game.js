@@ -5,7 +5,8 @@ class SnakeGame3D {
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById('gameCanvas'),
-            antialias: true
+            antialias: true,
+            powerPreference: 'high-performance'  // Optimize for performance
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
@@ -13,6 +14,18 @@ class SnakeGame3D {
         this.renderer.outputEncoding = THREE.sRGBEncoding;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.0;
+
+        // Performance optimizations
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));  // Cap pixel ratio
+        this.lastFrameTime = performance.now();
+        this.frameCount = 0;
+        
+        // Touch control optimizations
+        this.swipeThreshold = 20;  // Even lower threshold for faster response
+        this.swipeTimeThreshold = 150;  // Shorter time threshold
+        this.touchEnabled = 'ontouchstart' in window;
+        this.currentTouchDirection = null;
+        this.touchDebounceTimeout = null;
 
         // Handle window resize
         window.addEventListener('resize', () => {
@@ -41,12 +54,6 @@ class SnakeGame3D {
         this.gameLoop = null;
         this.isGameOver = false;
         this.isGameStarted = false;
-
-        // Touch controls state
-        this.touchStart = null;
-        this.touchStartTime = 0;
-        this.swipeThreshold = 50; // minimum distance for swipe
-        this.swipeTimeThreshold = 300; // maximum time for swipe
 
         // Setup scene
         this.setupScene();
@@ -182,73 +189,101 @@ class SnakeGame3D {
     }
 
     initializeControls() {
+        if (this.touchEnabled) {
+            // Optimized touch controls
+            const canvas = document.getElementById('gameCanvas');
+            
+            const handleTouchStart = (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                this.touchStart = { 
+                    x: touch.clientX, 
+                    y: touch.clientY,
+                    time: performance.now()  // Use performance.now for more accurate timing
+                };
+            };
+
+            const handleTouchMove = (e) => {
+                e.preventDefault();
+                if (!this.touchStart || !this.isGameStarted || this.isGameOver) return;
+
+                const touch = e.touches[0];
+                const dx = touch.clientX - this.touchStart.x;
+                const dy = touch.clientY - this.touchStart.y;
+                const touchDuration = performance.now() - this.touchStart.time;
+
+                // Process swipe immediately if it meets the threshold
+                if (touchDuration <= this.swipeTimeThreshold) {
+                    let newDirection = null;
+
+                    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) >= this.swipeThreshold) {
+                        newDirection = dx > 0 ? 'ArrowRight' : 'ArrowLeft';
+                    } else if (Math.abs(dy) >= this.swipeThreshold) {
+                        newDirection = dy > 0 ? 'ArrowDown' : 'ArrowUp';
+                    }
+
+                    if (newDirection && newDirection !== this.currentTouchDirection) {
+                        this.currentTouchDirection = newDirection;
+                        this.handleKeyPress(newDirection);
+                        
+                        // Reset touch start to allow for quick subsequent swipes
+                        this.touchStart = { 
+                            x: touch.clientX, 
+                            y: touch.clientY,
+                            time: performance.now()
+                        };
+                    }
+                }
+            };
+
+            const handleTouchEnd = () => {
+                this.touchStart = null;
+                this.currentTouchDirection = null;
+            };
+
+            // Add touch event listeners with passive: false for better performance
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+            // Optimize button controls
+            const touchButtons = {
+                'upBtn': 'ArrowUp',
+                'downBtn': 'ArrowDown',
+                'leftBtn': 'ArrowLeft',
+                'rightBtn': 'ArrowRight'
+            };
+
+            Object.entries(touchButtons).forEach(([btnId, key]) => {
+                const btn = document.getElementById(btnId);
+                const handleButtonTouch = (e) => {
+                    e.preventDefault();
+                    if (!this.touchDebounceTimeout) {
+                        this.handleKeyPress(key);
+                        // Add small debounce to prevent rapid firing
+                        this.touchDebounceTimeout = setTimeout(() => {
+                            this.touchDebounceTimeout = null;
+                        }, 50);
+                    }
+                };
+                btn.addEventListener('touchstart', handleButtonTouch, { passive: false });
+            });
+        }
+
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
             this.handleKeyPress(e.key);
         });
 
-        // Touch button controls - Using touchstart for faster response
-        const touchButtons = {
-            'upBtn': 'ArrowUp',
-            'downBtn': 'ArrowDown',
-            'leftBtn': 'ArrowLeft',
-            'rightBtn': 'ArrowRight'
-        };
-
-        Object.entries(touchButtons).forEach(([btnId, key]) => {
-            const btn = document.getElementById(btnId);
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                this.handleKeyPress(key);
-            }, { passive: false });
-        });
-
-        // Touch swipe controls with optimized thresholds
-        const canvas = document.getElementById('gameCanvas');
-        this.swipeThreshold = 30; // Reduced threshold for faster response
-        this.swipeTimeThreshold = 200; // Reduced time threshold
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            this.touchStart = { x: touch.clientX, y: touch.clientY };
-            this.touchStartTime = Date.now();
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            if (!this.touchStart) return;
-
-            const touch = e.changedTouches[0];
-            const touchEnd = { x: touch.clientX, y: touch.clientY };
-            const touchEndTime = Date.now();
-
-            const dx = touchEnd.x - this.touchStart.x;
-            const dy = touchEnd.y - this.touchStart.y;
-            const touchDuration = touchEndTime - this.touchStartTime;
-
-            if (touchDuration <= this.swipeTimeThreshold) {
-                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) >= this.swipeThreshold) {
-                    this.handleKeyPress(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
-                } else if (Math.abs(dy) >= this.swipeThreshold) {
-                    this.handleKeyPress(dy > 0 ? 'ArrowDown' : 'ArrowUp');
-                }
-            }
-
-            this.touchStart = null;
-        }, { passive: false });
-
-        // Game start/restart touch controls
+        // Game start/restart controls
         ['startBtn', 'restartBtn'].forEach(btnId => {
             const btn = document.getElementById(btnId);
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
+            const handleGameStart = (e) => {
+                if (e.type === 'touchstart') e.preventDefault();
                 this.startGame();
-            }, { passive: false });
-            btn.addEventListener('click', () => this.startGame());
+            };
+            btn.addEventListener('touchstart', handleGameStart, { passive: false });
+            btn.addEventListener('click', handleGameStart);
         });
     }
 
@@ -460,8 +495,30 @@ class SnakeGame3D {
 
     animate() {
         requestAnimationFrame(() => this.animate());
+        
+        // Performance optimization: limit update rate on mobile
+        const currentTime = performance.now();
+        const deltaTime = currentTime - this.lastFrameTime;
+        
+        if (this.touchEnabled && deltaTime < (1000 / 60)) {  // Cap at 60fps on mobile
+            return;
+        }
+
+        this.lastFrameTime = currentTime;
+        this.frameCount++;
+
+        // Optimize rendering
         TWEEN.update();
         this.renderer.render(this.scene, this.camera);
+
+        // Monitor performance every second
+        if (this.frameCount % 60 === 0) {
+            const fps = 1000 / deltaTime;
+            if (fps < 30 && this.renderer.getPixelRatio() > 1) {
+                // Reduce quality if performance is poor
+                this.renderer.setPixelRatio(1);
+            }
+        }
     }
 }
 
