@@ -1,26 +1,69 @@
+/* Reset and base styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
     user-select: none;
-    will-change: transform;
-    backface-visibility: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: #1a1a1a;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    background: #000;
+}
+
+/* Loading Screen */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 0.5s ease-out;
+}
+
+.loading-content {
+    text-align: center;
+    color: white;
+}
+
+.loading-bar {
+    width: 200px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    margin-top: 20px;
     overflow: hidden;
 }
 
+.loading-progress {
+    width: 0%;
+    height: 100%;
+    background: #4CAF50;
+    border-radius: 5px;
+    animation: loading 2s ease-in-out infinite;
+}
+
+@keyframes loading {
+    0% { width: 0%; }
+    50% { width: 100%; }
+    100% { width: 0%; }
+}
+
+/* Game Container */
 #game-container {
     position: relative;
     width: 100vw;
     height: 100vh;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.5s ease-in;
 }
 
 #gameCanvas {
@@ -32,6 +75,7 @@ body {
     touch-action: none;
 }
 
+/* UI Overlay */
 .ui-overlay {
     position: absolute;
     top: 0;
@@ -39,9 +83,9 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 10;
 }
 
+/* Game Header */
 .game-header {
     position: absolute;
     top: 20px;
@@ -65,10 +109,8 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Minimap */
 #minimap {
-    position: absolute;
-    top: 20px;
-    right: 20px;
     width: 120px;
     height: 120px;
     background-color: rgba(0, 0, 0, 0.4);
@@ -76,7 +118,6 @@ body {
     border-radius: 15px;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 20;
     transition: opacity 0.3s ease;
 }
 
@@ -84,67 +125,11 @@ body {
     opacity: 0.95;
 }
 
-.game-menu, .game-over {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.85);
-    padding: 2.5rem;
-    border-radius: 20px;
-    text-align: center;
-    color: white;
-    backdrop-filter: blur(15px);
-    pointer-events: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.hidden {
-    display: none;
-}
-
-h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1.5rem;
-    color: white;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-}
-
-h2 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: white;
-}
-
-.menu-button {
-    background: linear-gradient(to bottom right, #4CAF50, #45a049);
-    color: white;
-    border: none;
-    padding: 15px 30px;
-    font-size: 1.2rem;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin: 12px 0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.menu-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-}
-
-.menu-button:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
+/* Mobile Controls */
 .mobile-controls {
     position: absolute;
     bottom: 40%;
     left: 20px;
-    transform: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -172,10 +157,6 @@ h2 {
     display: flex;
     justify-content: center;
     align-items: center;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    user-select: none;
-    padding: 0;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
@@ -186,21 +167,97 @@ h2 {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Show mobile controls on touch devices */
-@media (hover: none) and (pointer: coarse) {
-    .mobile-controls {
-        display: flex;
-    }
+/* Game Menus */
+.game-menu, .game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 2.5rem;
+    border-radius: 20px;
+    text-align: center;
+    color: white;
+    backdrop-filter: blur(15px);
+    pointer-events: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-/* Hide mobile controls on desktop */
-@media (hover: hover) and (pointer: fine) {
-    .mobile-controls {
-        display: none;
-    }
+.controls-info {
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
 }
 
-/* Adjust game container for smaller screens */
+.menu-button {
+    background: linear-gradient(to bottom right, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 12px 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.menu-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.menu-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Error Message */
+.error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.error-content {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    color: white;
+    backdrop-filter: blur(10px);
+    max-width: 80%;
+}
+
+.error-content button {
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.error-content button:hover {
+    background: #ff6666;
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
     .game-header {
         padding: 15px;
@@ -231,7 +288,6 @@ h2 {
     }
 }
 
-/* Smaller screens */
 @media (max-width: 480px) {
     .game-header {
         padding: 10px;
@@ -260,7 +316,6 @@ h2 {
     }
 }
 
-/* Landscape mode */
 @media (max-height: 600px) and (orientation: landscape) {
     #minimap {
         width: 70px;

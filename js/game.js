@@ -1,5 +1,17 @@
 class SnakeGame3D {
     constructor() {
+        // Hide loading screen immediately if dependencies are loaded
+        if (typeof THREE === 'undefined' || typeof TWEEN === 'undefined') {
+            document.getElementById('error-message').classList.remove('hidden');
+            throw new Error('Required dependencies not loaded');
+        }
+
+        // Hide loading screen
+        document.getElementById('loading-screen').style.display = 'none';
+        
+        // Show game container
+        document.getElementById('game-container').style.opacity = '1';
+
         // Initialize Three.js scene
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
@@ -11,7 +23,7 @@ class SnakeGame3D {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.0;
 
@@ -27,18 +39,31 @@ class SnakeGame3D {
         this.currentTouchDirection = null;
         this.touchDebounceTimeout = null;
 
+        // Game settings
+        this.gridSize = 40;
+        this.tileCount = 20;
+        this.snake = [{x: 0, y: 0, z: 0}];
+        this.direction = {x: 0, y: 0, z: 0};
+        this.score = 0;
+        this.gameSpeed = 150;
+        this.gameLoop = null;
+        this.isGameOver = false;
+        this.isGameStarted = false;
+
+        // Calculate view height here
+        this.viewHeight = (this.tileCount * this.gridSize) * 1.2; // Add 20% margin
+
+        // Set camera position for perfect top-down view
+        this.camera.position.set(0, this.viewHeight, 0);  // Camera directly above
+        this.camera.lookAt(0, 0, 0);  // Looking straight down
+        this.camera.up.set(0, 0, -1);  // Set up vector to align with world coordinates
+
         // Handle window resize
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        // Set camera position for perfect top-down view
-        const viewHeight = (this.tileCount * this.gridSize) * 1.2; // Add 20% margin
-        this.camera.position.set(0, viewHeight, 0);
-        this.camera.lookAt(0, 0, 0);
-        this.camera.rotation.z = Math.PI; // Ensure correct orientation
 
         // Initialize minimap
         this.minimapCanvas = document.getElementById('minimap');
@@ -51,17 +76,6 @@ class SnakeGame3D {
         this.minimapCanvas.width *= dpr;
         this.minimapCanvas.height *= dpr;
         this.minimapCtx.scale(dpr, dpr);
-
-        // Game settings
-        this.gridSize = 40;
-        this.tileCount = 20;
-        this.snake = [{x: 0, y: 0, z: 0}];
-        this.direction = {x: 0, y: 0, z: 0};
-        this.score = 0;
-        this.gameSpeed = 150;
-        this.gameLoop = null;
-        this.isGameOver = false;
-        this.isGameStarted = false;
 
         // Setup scene
         this.setupScene();
@@ -77,23 +91,23 @@ class SnakeGame3D {
         this.scene.add(ambientLight);
 
         const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        sunLight.position.set(0, viewHeight, 0); // Align with camera
+        sunLight.position.set(0, this.viewHeight, 0); // Use this.viewHeight instead of viewHeight
         sunLight.target.position.set(0, 0, 0);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 2048;
         sunLight.shadow.mapSize.height = 2048;
         sunLight.shadow.camera.near = 0.5;
-        sunLight.shadow.camera.far = viewHeight * 2;
-        sunLight.shadow.camera.left = -viewHeight;
-        sunLight.shadow.camera.right = viewHeight;
-        sunLight.shadow.camera.top = viewHeight;
-        sunLight.shadow.camera.bottom = -viewHeight;
+        sunLight.shadow.camera.far = this.viewHeight * 2;
+        sunLight.shadow.camera.left = -this.viewHeight;
+        sunLight.shadow.camera.right = this.viewHeight;
+        sunLight.shadow.camera.top = this.viewHeight;
+        sunLight.shadow.camera.bottom = -this.viewHeight;
         this.scene.add(sunLight);
         this.scene.add(sunLight.target);
 
         // Add hemisphere light for better ambient lighting
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
-        hemiLight.position.set(0, viewHeight, 0);
+        hemiLight.position.set(0, this.viewHeight, 0);
         this.scene.add(hemiLight);
 
         // Create simple skybox color - lighter for better visibility
@@ -108,7 +122,7 @@ class SnakeGame3D {
             metalness: 0.2
         });
         this.ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        this.ground.rotation.x = -Math.PI / 2;
+        this.ground.rotation.x = -Math.PI / 2;  // Rotate to be flat
         this.ground.position.y = 0;
         this.ground.receiveShadow = true;
         this.scene.add(this.ground);
@@ -209,7 +223,7 @@ class SnakeGame3D {
                 this.touchStart = { 
                     x: touch.clientX, 
                     y: touch.clientY,
-                    time: performance.now()  // Use performance.now for more accurate timing
+                    time: performance.now()
                 };
             };
 
@@ -236,7 +250,6 @@ class SnakeGame3D {
                         this.currentTouchDirection = newDirection;
                         this.handleKeyPress(newDirection);
                         
-                        // Reset touch start to allow for quick subsequent swipes
                         this.touchStart = { 
                             x: touch.clientX, 
                             y: touch.clientY,
@@ -305,26 +318,26 @@ class SnakeGame3D {
 
         switch(key) {
             case 'ArrowUp':
-                if (this.direction.z !== 1) {
+                if (this.direction.z !== 1) {  // Prevent reversing
                     newDirection.x = 0;
-                    newDirection.z = -1;
+                    newDirection.z = -1;  // Move up in screen space
                 }
                 break;
             case 'ArrowDown':
-                if (this.direction.z !== -1) {
+                if (this.direction.z !== -1) {  // Prevent reversing
                     newDirection.x = 0;
-                    newDirection.z = 1;
+                    newDirection.z = 1;  // Move down in screen space
                 }
                 break;
             case 'ArrowLeft':
-                if (this.direction.x !== 1) {
-                    newDirection.x = -1;
+                if (this.direction.x !== 1) {  // Prevent reversing
+                    newDirection.x = -1;  // Move left in screen space
                     newDirection.z = 0;
                 }
                 break;
             case 'ArrowRight':
-                if (this.direction.x !== -1) {
-                    newDirection.x = 1;
+                if (this.direction.x !== -1) {  // Prevent reversing
+                    newDirection.x = 1;  // Move right in screen space
                     newDirection.z = 0;
                 }
                 break;
@@ -416,7 +429,7 @@ class SnakeGame3D {
     updateMinimap() {
         const ctx = this.minimapCtx;
         const scale = this.minimapCanvas.width / (this.tileCount * this.gridSize);
-        const tileSize = Math.max(2, this.gridSize * scale); // Ensure minimum size of 2px
+        const tileSize = Math.max(2, this.gridSize * scale);
 
         // Clear minimap with semi-transparent background
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
@@ -455,7 +468,6 @@ class SnakeGame3D {
         // Draw snake with gradient
         const headIndex = 0;
         this.snake.forEach((segment, index) => {
-            // Create gradient from head to tail
             const alpha = 1 - (index / this.snake.length) * 0.5;
             ctx.fillStyle = index === headIndex ? '#ffff00' : `rgba(255, 255, 0, ${alpha})`;
             
@@ -468,7 +480,7 @@ class SnakeGame3D {
                 Math.PI * 2
             );
             ctx.fill();
-          });
+        });
     }
 
     gameOver() {
@@ -561,33 +573,27 @@ class SnakeGame3D {
     }
 }
 
-// Initialize game when window loads
+// Update the window.onload handler at the bottom of the file
 window.addEventListener('DOMContentLoaded', () => {
-    // Check if dependencies are loaded
-    if (typeof THREE === 'undefined') {
-        console.error('Three.js is not loaded! Please check your internet connection.');
-        alert('Failed to load required dependencies. Please check your internet connection and refresh the page.');
-        return;
-    }
-
-    if (typeof TWEEN === 'undefined') {
-        console.error('TWEEN.js is not loaded! Please check your internet connection.');
-        alert('Failed to load required dependencies. Please check your internet connection and refresh the page.');
-        return;
-    }
-
     try {
-        const game = new SnakeGame3D();
-        
-        // Add event listeners for menu buttons
-        document.getElementById('startBtn').addEventListener('click', () => game.startGame());
-        document.getElementById('restartBtn').addEventListener('click', () => game.startGame());
+        // Check if dependencies are loaded
+        if (typeof THREE === 'undefined') {
+            throw new Error('Three.js is not loaded! Please check your internet connection.');
+        }
 
-        // Log successful initialization
+        if (typeof TWEEN === 'undefined') {
+            throw new Error('TWEEN.js is not loaded! Please check your internet connection.');
+        }
+
+        // Initialize game
+        const game = new SnakeGame3D();
         console.log('Game initialized successfully!');
+
     } catch (error) {
         console.error('Error initializing game:', error);
-        alert('An error occurred while initializing the game. Please refresh the page.');
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('error-message').classList.remove('hidden');
+        document.getElementById('error-details').textContent = error.message;
     }
 });
 
